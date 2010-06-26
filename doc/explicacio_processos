@@ -1,0 +1,94 @@
+S'ha organitzat el programa en dos processos principals, un que s'encarrega d'acceptar
+conexions noves i un altre que es on corre el joc. La creacio dels processos es
+senzilla i esta al comensament del main.cpp
+
+Proces A
+========
+
+Aquest proces accepta conexions, i esta encapsulat en la clase ConnectionHandler.
+
+Objectiu del procés:
+	Serveix per independitzar la conexio dun nou client de lo que es el joc.
+	Fa tota la part de autentificacio del client i al final de tot, es comunica amb
+	el proces B perque el client entri en el joc. En aquest punt comensara realment
+	el joc pel client.
+
+
+Que fa ara i com ho fa:
+	Ara crea el socket principal i li fa el bind() al port 4000, i es queda escoltant.
+	El proces es bloqueja en el accept(). Ara, cada cop que rep unaconexio, primer fa
+	un mini-proces d'identificacio. Demana un numero de player per entrar (hauria de
+	demanar nom i contrasenya etc...) i despres crea la conexio.
+	Per pasar-li el client al proces B s'han d'enviar dues coses.
+
+	1) Un objecte ClientConnection, que conte info sobre el client que va a entrar
+	al joc. Conte el nom del jugador que entra, el seu id, un struct que defineix
+	la conexio (la ip del client basicament) i el numero de fd del socket del client.
+
+	2) La conexio amb el client. Aixo es important. El socket de conexio amb el client
+	l'ha creat el proces A, aixo vol dir que es aquest qui el te obert en la seva taula
+	de canals. El proces B no sap res d'aquesta conexio, no la te oberta. Aqui ens
+	aprofitem d'un mecanisme de UNIX que permet transferir canals oberts d'un proces
+	a un altre, mitjansant sockets de tipus unix.
+
+	- La comunicacio entre A i B ha de ser asincrona (no bloquejant) ja que el proces B
+	es qui controla el joc, i te un while(1) que s'ha de fer sempre, no es pot quedar
+	bloquejat en un read() esperant informacio del proces A.
+	- La transferencia del socket client e A a B es imprescindible, i s'ha de fer per
+	força amb un socket unix. Els sockets unix poden portar qualsevol tipus d'informacio
+	(no nomes file descriptors), aixi que es podria pensar que nomes amb aquest socket
+	n'hi ha prou per comunicar A i B.
+	Però, tambe es inevitable que sobre aquest scket unix s'hauran de fer dos operacions
+	d'enviar informacio, un write() per enviar el ClientConnection i un sendmsg() per enviar
+	la conexio client. I, com que aquest socket ha de ser no bloquejant, aixo ens suposa
+	problemes de sincronitzacio. (el proces B hauria de fer dos reads() i no sabria quant
+	eta rebent una cosa i quant una altre)
+	Per solucionar-ho, optem per una solucio facil que es tenir dos vies de comunicacio obertes
+	entre A i B. Un socket unix pels fd's i una pipe normal pels ClientConnections, les dos
+	no bloquejants.
+
+	Finalment, quant el proces B rep la conexio client, ha de modificar el fd que ha rebut
+	en el ClientConnection posant-li el seu fd real. (el proces A quan rep una conexio, la crea
+	l'envia al B i la destrueix, aixi uqe sempre ens estara enviant ClientConnections que
+	contindran un fd = 5, per dir alguna cosa, sempre el mateix numero. El proces B en canvi
+	conserva aquestes conexions amb els clients, i ha de tenir per tant un fd diferent).
+
+
+
+
+Que hauria de fer:
+
+	Threads:
+
+	El procés d'inicialitzacio d'un client no es instantani, tarda un temps. Per tal
+	que dos clients poguesin inicialitzarse simultaneament, s'haurien d'afegir threads.
+	Nomes se surt del accept() es crea un thread pel client, i es en aquest thread on
+	es fa tot el procés d'inici.
+	En l'ultim punt, on es comunica amb el proces B per fer entrar el client, aquesta
+	comunicacio s'hauria de fer protegida per evitar race conditions.
+	Com seria? es crea un semafor amb valor 1. Quant el proces A va a enviar un nou
+	client al proces B, fa abans un sem_wait, i quant el proces B el rep fa un sem_signal.
+
+
+	Accept() no bloquejant:
+
+	La idea es que el porces B pugui controlar el A amb algun tipus de comunicacio.
+	Aixo serviria per desactivar temporalment la conexio de nous clients, per exemple.
+	O si el joc estigues fora deservei duran un temps pel motiu que fos, el proces A
+	podria continuar executantse i aixi poder informar als clients que es conectin
+	que hi ha un problema. Aixi si algun client volgues entrar, en comptes de directament
+	no tenir conexio al servidor, es conectaria pero no podria jugar, i a traves
+	del proces A ser li podria informar de l'averia, etc. (seria informarlo i desconectarlo
+	a continuacio)
+
+
+	Temps de conexio:
+
+	Quant el proces A envia al proces B la nova conexio, aquest jugador entra inmediatament
+	en el joc. Aixo vol dir, que si el client esta jugant amb el nostre programa client
+	i aquest ha de carregar alguna cosa, s'ha de pasar un temps de loading, aquesta comunicacio
+	no pot tenir lloc fins que el client estigui realment llest.
+	Com s'hauria de fer?: Es fa el proces de inici (login, etc...) i si tot es correcte
+	es diu el client que carregui. Quant el client esta llest aquest envia algun misatge al
+	proces A per indicarli que esta llest, i aleshores el proces A li envia al B el client.
+

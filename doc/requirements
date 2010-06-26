@@ -1,0 +1,55 @@
+Llibreries necesaries
+=====================
+
+1) MySQL C API, molt antiga sense suporta ja, nomes es necesaria perque funcioni MySQL++.
+	Paquet DEBIAN:			libmysqlclient15-dev
+	Versio utilitzada:		5.0.51a
+	Instalar:				sudo apt-get install libmysqlclient15-dev
+
+2) MySQL++.
+	Paquet DEBIAN: 			libmysql++-dev (OJO! NO INSTALAR, es la versio 2.0.2)
+	Versio utilitzada:		3.0.3
+	Web:					http://tangentsoft.net/mysql++/
+	Comments:				La versio del repositori es bastant antiga (la 2.0.2) aixi que
+							no s'utilitzara. En el seu lloc farem servir la versio 3.0.3,
+							amb l'unic inconvenient que per instalarla en comptes de fero
+							pel repositori s'haura de compilar i fer a ma.
+	Instalar:				1) Copiar carpeta mysql++ de lib/ en algun lloc del teu pc.
+							2) Entra a la carpeta desde un terminal
+							3) Executar:
+									sudo ./configure
+									sudo make
+									sudo make install
+									sudo ldconfig
+							4) La llibreria s'instalara a /usr/local/lib i els includes
+							a /usr/local/include/mysql++
+
+
+
+3) Pthread. 
+
+
+Opcions de linkatge i Compilacio
+================================
+
+Headers:
+	L'unic fitxer que s'ha d'incloure casi sempre es el mysql++.h, que esta a
+	/usr/local/include/mysql++/mysql++.h. Com que la carpeta  /usr/local/include/
+	esta inclosa al path per defecte, per fer l'include nomes cal afegir la carpeta
+	mysql++. Queda aixi:
+	#include <mysql++/mysql++.h>
+	Si es fes nomes: #include <mysql++.h> no ho trobaria perque la cerca no es recursiva
+	dins de subcarpetes, nomes es busca a /usr/local/include i no a la seva subcarpeta
+	mysql++
+
+Linkatge:
+	L'executable s'ha de linkar a les dos llibreries d'abans.
+	Aixo es fa amb les opcions -lmysqlpp i -lmysqlclient del compilador g++, pero
+	el IDE que utilitzis segur que te formes d'indicarli facilment quines llibreries
+	vols incluir en el linkatge.
+	Com que les llibreries estan a /usr/lib i /usr/local/lib ja estan al path per defecte
+	i no cla indicarli que les busqui en altres llocs.
+
+	Tambe s'han de linkar les llibreries de Sockets, ssl i pthread.
+
+	L'ordre resulta ser important, i es aquest: Sockets, ssl, mysql*, pthread.

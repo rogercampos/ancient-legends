@@ -1,0 +1,19 @@
+ 
+IDEA !! 
+
+en el nostre mud hi haura un nick especial anomenat 'nroom', que sera diferent per a cada jugador i que contindra, a cada instant, una llista aleatoria dels jugadors enemics que aquell jugador té visibles. S'actualitza quant:
+
+- el Pj entra en una room, 
+- algun enemic entra en al room del pj,
+- algun enemic es fa visible davan el pj, 
+...
+
+Un nick general d'atac quedaria aixi
+
+nick objectiu x,x1,x2,x3,x4,x5,xc6,nroom,y1,y2,y3,y4,y5
+
+On les 'x' serien prioritats d'atacar (jugadors a matar abans) i les y prioritats secundaries (npcs per exemple quant vas a atacar alguna ciutat)
+
+
+
+Per a les cures i objectius de cures seria igual que com funcionava al mud

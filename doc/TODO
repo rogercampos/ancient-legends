@@ -1,0 +1,105 @@
+MANUAL DE LA STL
+================
+
+http://www.cprogramming.com/tutorial/stl/stlmap.html
+http://www.cprogramming.com/tutorial/stl/iterators.html
+
+
+
+- Millorar el sistema de direccions, no m'agrada gens com esta fet. Masa depenent dels noms de les sortides, s'ha de fer versatil.
+	Potser amb un enumerate?
+
+- Pot ser que el proces que s'ocupa de noves conexions peti nomes arrencar perque el
+bind() falli, o per altres raons. Aleshores colocar un handler del signal SIGCHL en el
+proces principal per detectar quan mor l'altre proces, i tancar el joc.
+
+- per obtenir la ip  a partir del in_addr, funcio inet_ntoa(..)
+
+- capturar el signal kill, per tancar el programa
+
+
+- separar la clase Skill en SkillPattern i Skill. Son dos conceptes diferents,
+el SkillPattern es una instancia dun comando generic, conte informacio sobre aquell
+tipus de comando (nom: "glance", id, funcio que la controla). Si hi han en total en
+el joc 10 comandos disponibles, existiran 10 instancies FIXES de SkillPattern.
+Una instancia de Skill en canvi es un comando que un jugador ha enviat i que esta
+a la pila d'aquell player per ser executada. Conté els parametres d'aquell skill.
+Un jugador podria tenir en la seva pila per exemple 3 comandos de tipus "norte" i
+un de "glance" o un de nosque.
+Ara mateix es fa tot utilitzant la clase Skill.
+
+
+Com pasar file descriptors entre processos:
+man cmsg
+http://lists.canonical.org/pipermail/kragen-hacks/2002-January/000292.html
+http://docs.hp.com/en/B2355-90136/ch06s07.html
+
+
+
+- hi haurien diferents sublcases de skill, cada una que contindra els valors
+dels seus posibles parametres.
+
+
+MILLORES POC IMPORTANTS
+=======================
+
+ConnectionHandler:
+
+Ara mateix es crea tot el mon, i l'ultim que es fa es arrencar el proces per acceptar
+noves conexions. El proces que accepta noves conexions es independent i incontrolable,
+i es queda bloquejat en cada accept().
+Una manera millor de fero, seria que es pogues controlar aquet proces desde el main
+process a traves d'algun protocol propi.
+Aixi per exemple, es podria llansar aquet proces nomes arrencar, i si algu es vol
+conectar abans que estigui el mon creat que li surti un misatge dient "espera un moment
+mentre es carrega el mon".
+Aquest proces es el responsable de les conexions entrants, es "la cara al mon" del
+joc. Es podria fer servir per mes coses, per exmeple per informar al client si hi
+ha algun problema i l'estem resolent, etc...
+Per fero, el accept hauria de ser no bloquejant i hauria d'escoltar ordres per algun
+canal de comunicacio continuament.
+Si el joc estigues inaccesible duran un temps, per exemple, en comptes de que els
+clients no es poguesin conectar, seria molt millor que si es conectesin pero que sels
+informes del problema. Aix oes podria fer aixi.
+
+
+
+- Retocar el sistema de skills. Les skills les poden fer tant Players com Npcs,
+i ara mateix la capçalera de les skills es pasa un Player no un Character.
+Millorar el disseny. Les skills que poden fer tant npcs com jugadors, haurien
+d'estar implementades en diferents llocs. Hi ha diferencies, per exemple quant
+el comando falla, si es un jugador se li haura de escriure un msg amb l'error.
+en canvi si ho fa un npc espot considerar que mai hi haura fallos.
+
+- preparar la recepcio de comandos del client perque aquest pugui enviar uns quants
+comandos alhora en un sol enviament TCP. (per macros, o per paths)
+
+
+Objectiu 1
+==========
+
+Que es puguin conectar uns quants jugadors i lluitin entre si, amb mele + alguns
+comandos especials. Posar hb, sistema de combat bàsic, calcul de mal fisic
+(sense magies). Els pjs poden morir.
+Independitzar els calculs del mal en combat, patro de seleccio d'algoritme en
+temps real.
+Modelar el tema de stats dels jugadors (stats = fue, des, con, vida max, level,
+etc...). Hi ha stats basics, i despres els modificats per l'¡equip que pugui
+portar el player. Guardar aixo en bd.
+No hi ha npcs, no hi ha items ni armes. No hi ha guilds ni races.
+
+
+1) Que els pjs puguin morir
+2) Reestructura el sistema de habilitats dels jugadors. Ara mateix estan ajuntades
+les habilitats reals (un guerrer por fer un golpe critico, o pot posarse en furia)
+amb les comandes a realitzar per activarles (gcritico, berserk). Pero no es el
+mateix. Poden haberi habilitats relacionades amb el pj pasives, com al wow.
+Tambe poden haberi diferents comandos disponibles per manipular una habilitat, per
+exemple desaparecer y aparecer.
+3) Crea estructura de "items" generics.
+4) Els pjcs tenen una bosa per guardar una certa quantitat de items.
+4) Els pjcs tenen "ranuras" de llocs on posarse el equip. Crear equipar, desequipar,
+empunyar, envainar, "i" de inventario, etc...
+5) Crear estructura de "stats" de cada jugador. Fue, con, des, sab, int, car. Altres
+variables com bloqueo, poder atake, etc... Tenir en compte les basiques, totes
+les modificacions que poden haberi, etc...

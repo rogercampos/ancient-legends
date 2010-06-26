@@ -1,0 +1,21 @@
+Com afegir noves skills
+=======================
+
+- A l'arxiu skillsController.cpp, funcio init_skills(). Afegir una crida com aquesta:
+add_skill(id, "salir", SKILL_PLAYER_TYPE, &SkillsActions::salir);
+Cambiant nomes el nom del comando ("salir") i el punter a la funcio que ho controla,
+osigui &SkillsActions::salir. Tambe es posible que camiis la constant SKILL_PLAYER_TYPE.
+Aixo es per clasificar els comandos segons si son de personatge, de jugador o de guild
+
+- A l'arxiu skillsActions.cpp, afegir la funcio que sigui. Tambe afegir la capçalera al .h
+
+
+Estatua lagueada
+================
+
+- Es fa estatua lagueada quant un player no pot sortir del joc, i aquest ha tancat
+el seu client, o be s'ha penjat (no respon a keep alive).
+Una estatua lagueada es comporta igual que un player normal excepte que no te cap
+recolzament a net. No te ClientConnection associat, i ClientManager no sap res d'ell.
+Se li ha fet un net::ClientManager::get_instance()->remove_client(). Te anulades
+les funcions write de player.
